@@ -39,20 +39,12 @@ def load_embeddings():
 @st.cache_resource(show_spinner=False)
 def build_vector_db(chunks, metadata):
 
-    metadata = [
-        {
-            "source": item[1],
-            "subject": item[3]
-        }
-        for item in metadata
-    ]
-
     embeddings = load_embeddings()
 
     return create_vector_store(
         list(chunks),
         embeddings,
-        metadata
+        list(metadata)
     )
 
 # -------------------------
@@ -146,12 +138,7 @@ if uploaded_files:
     db = build_vector_db(
         tuple(all_chunks),
         tuple(
-            (
-                "source",
-                item["source"],
-                "subject",
-                item["subject"]
-            )
+            (item["source"], item["subject"])
             for item in all_metadata
         )
     )
@@ -260,6 +247,10 @@ if uploaded_files:
                 context = "\n\n".join(all_chunks)
 
         else:
+
+            if not query:
+                st.warning("Please enter a question")
+                st.stop()
 
             docs = retrieve_docs(db, query)
 
@@ -399,6 +390,8 @@ Provide:
         # -------------------------
         # LLM CALL
         # -------------------------
+
+        st.write(type(llm))
 
         response = llm.invoke(prompt)
 
