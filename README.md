@@ -143,7 +143,7 @@ Upload previous year question papers and generate:
 ### Clone Repository
 
 ```bash
-git clone https://github.com/your-username/EduMind-AI.git
+git clone https://github.com/SnehaM-96/EduMind-AI.git
 cd EduMind-AI
 ```
 
