@@ -9,5 +9,3 @@ PyPDF2
 python-docx
 python-pptx
 sentence-transformers
-transformers
-torch
