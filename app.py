@@ -137,10 +137,7 @@ if uploaded_files:
 
     db = build_vector_db(
         tuple(all_chunks),
-        tuple(
-            (item["source"], item["subject"])
-            for item in all_metadata
-        )
+        tuple(all_metadata)
     )
 
     llm = get_llm()
@@ -390,8 +387,6 @@ Provide:
         # -------------------------
         # LLM CALL
         # -------------------------
-
-        st.write(type(llm))
 
         response = llm.invoke(prompt)
 

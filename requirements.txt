@@ -5,9 +5,7 @@ langchain-core==0.2.36
 langchain-community==0.2.12
 langchain-google-genai==1.0.10
 
-google-genai
-
-faiss-cpu==1.13.1
+faiss-cpu==1.8.0
 
 sentence-transformers
 transformers
