@@ -1,9 +1,7 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit as st
+from google import genai
 
 def get_llm():
-    return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        temperature=0.3,
-        google_api_key=st.secrets["GOOGLE_API_KEY"]
-    )
+    client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
+    return client
+

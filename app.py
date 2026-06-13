@@ -156,6 +156,8 @@ if uploaded_files:
         )
     )
 
+    llm = get_llm()
+
     # -------------------------
     # Sidebar
     # -------------------------
@@ -247,38 +249,25 @@ if uploaded_files:
 
             if query.strip():
 
-                filtered_chunks = []
+                filtered_chunks = [
+                    chunk for chunk in all_chunks
+                    if query.lower() in chunk.lower()
+                ]
 
-                for chunk in all_chunks:
-
-                    if query.lower() in chunk.lower():
-                        filtered_chunks.append(chunk)
-
-                if filtered_chunks:
-                    context = "\n\n".join(filtered_chunks)
-
-                else:
-                    context = "\n\n".join(all_chunks)
+                context = "\n\n".join(filtered_chunks if filtered_chunks else all_chunks)
 
             else:
-
                 context = "\n\n".join(all_chunks)
 
         else:
 
-            docs = retrieve_docs(
-                db,
-                query
-            )
+            docs = retrieve_docs(db, query)
 
-            context = "\n\n".join(
-                [
-                    doc.page_content
-                    for doc in docs
-                ]
-            )
+            context = "\n\n".join([doc.page_content for doc in docs])
 
-        llm = get_llm()
+        # -------------------------
+        # PROMPT
+        # -------------------------
 
         if mode == "Topic Explanation (Learn a concept in detail)":
 
@@ -407,19 +396,25 @@ Provide:
 6. One-Page Quick Revision Notes
 """
 
+        # -------------------------
+        # LLM CALL
+        # -------------------------
+
         response = llm.invoke(prompt)
+
+        answer = response.content
 
         st.session_state.history.append(
             {
                 "question": query if query else "Generated Content",
                 "mode": mode,
-                "answer": response.content
+                "answer": answer
             }
         )
 
         st.subheader("Answer")
 
-        st.write(response.content)
+        st.write(answer)
 
         if mode in [
             "Exam Ready Answer (Generate a structured exam answer)",
@@ -428,7 +423,7 @@ Provide:
 
             st.download_button(
                 "Download Answer",
-                response.content,
+                answer,
                 file_name="academic_answer.txt",
                 mime="text/plain"
             )
