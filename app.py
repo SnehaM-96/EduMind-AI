@@ -229,6 +229,8 @@ if uploaded_files:
 
         docs = []
 
+        MAX_CONTEXT_CHARS = 3000
+
         if mode in note_modes:
 
             if query.strip():
@@ -238,10 +240,14 @@ if uploaded_files:
                     if query.lower() in chunk.lower()
                 ]
 
-                context = "\n\n".join(filtered_chunks if filtered_chunks else all_chunks)
+                context = "\n\n".join(
+                    filtered_chunks if filtered_chunks else all_chunks[:10]
+                )
 
             else:
-                context = "\n\n".join(all_chunks)
+                context = "\n\n".join(all_chunks[:10])
+
+            context = context[:MAX_CONTEXT_CHARS]
 
         else:
 
@@ -252,7 +258,6 @@ if uploaded_files:
             docs = retrieve_docs(db, query)
 
             context = "\n\n".join([doc.page_content for doc in docs])
-            MAX_CONTEXT_CHARS = 8000
             context = context[:MAX_CONTEXT_CHARS]
 
         # -------------------------
@@ -390,9 +395,25 @@ Provide:
         # LLM CALL
         # -------------------------
 
-        response = llm.invoke(prompt)
+        import time
+        from google.api_core.exceptions import ResourceExhausted
 
-        answer = response.content
+        max_retries = 3
+
+        for attempt in range(max_retries):
+
+            try:
+                response = llm.invoke(prompt)
+                answer = response.content
+                break
+
+            except ResourceExhausted:
+                if attempt < max_retries - 1:
+                    st.warning(f"Rate limit hit. Retrying in 20 seconds... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(20)
+                else:
+                    st.error("API quota exceeded. Please wait a minute and try again.")
+                    st.stop()
 
         st.session_state.history.append(
             {
