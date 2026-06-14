@@ -535,27 +535,26 @@ Provide:
 
             with col2:
 
-                already_bookmarked = any(
+                    already_bookmarked = any(
                     bm["question"] == (query if query else "Generated Content")
-                    and bm["answer"] == answer
-                    for bm in st.session_state.bookmarks
-                )
+                   and bm["answer"] == answer
+                   for bm in st.session_state.bookmarks
+    )
 
-                if already_bookmarked:
-                    st.info("✅ Already bookmarked")
+    if already_bookmarked:
+        st.info("✅ Already bookmarked")
 
-                else:
-                    if st.button("🔖 Bookmark this Answer"):
-                        st.session_state.bookmarks.append(
-                            {
-                                "question": query if query else "Generated Content",
-                                "mode": mode,
-                                "answer": answer,
-                                "subject": detected_subject
-                            }
-                        )
-                        st.success("✅ Bookmarked! View it in the sidebar.")
-
+    else:
+        if st.button("🔖 Bookmark this Answer"):
+            st.session_state.bookmarks.append(
+                {
+                    "question": query if query else "Generated Content",
+                    "mode": mode,
+                    "answer": answer,
+                    "subject": detected_subject
+                }
+            )
+            st.rerun()
             if docs:
 
                 st.subheader("Sources Used")
