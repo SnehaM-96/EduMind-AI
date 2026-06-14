@@ -81,7 +81,7 @@ st.sidebar.markdown("---")
 # Stats Section
 # -------------------------
 
-st.sidebar.subheader("📊 Session Stats")
+st.sidebar.subheader(" Session Stats")
 
 col_a, col_b = st.sidebar.columns(2)
 
@@ -97,7 +97,7 @@ st.sidebar.markdown("---")
 # Recent Queries Section
 # -------------------------
 
-st.sidebar.subheader("🕘 Recent Queries")
+st.sidebar.subheader(" Recent Queries")
 
 if len(st.session_state.history) == 0:
     st.sidebar.caption("No queries yet")
@@ -127,7 +127,7 @@ if len(st.session_state.bookmarks) == 0:
 
 else:
 
-    if st.sidebar.button("🗑️ Clear All Bookmarks"):
+    if st.sidebar.button(" Clear All Bookmarks"):
         st.session_state.bookmarks = []
         st.rerun()
 
@@ -146,7 +146,7 @@ else:
 
             with col1:
                 st.download_button(
-                    "⬇️ Download",
+                    "⬇ Download",
                     bm['answer'],
                     file_name=f"bookmark_{i+1}.txt",
                     mime="text/plain",
@@ -155,7 +155,7 @@ else:
 
             with col2:
                 if st.button(
-                    "🗑️ Remove",
+                    " Remove",
                     key=f"remove_bookmark_{i}"
                 ):
                     st.session_state.bookmarks.pop(i)
@@ -167,14 +167,14 @@ st.sidebar.markdown("---")
 # Clear History Button
 # -------------------------
 
-st.sidebar.subheader("⚙️ Session Controls")
+st.sidebar.subheader(" Session Controls")
 
-if st.sidebar.button("🧹 Clear Query History"):
+if st.sidebar.button(" Clear Query History"):
     st.session_state.history = []
     st.session_state.total_queries = 0
     st.rerun()
 
-if st.sidebar.button("🔄 Reset Everything"):
+if st.sidebar.button(" Reset Everything"):
     st.session_state.history = []
     st.session_state.bookmarks = []
     st.session_state.total_queries = 0
@@ -282,7 +282,7 @@ if uploaded_files:
     with st.sidebar:
 
         st.markdown("---")
-        st.subheader("📁 Uploaded Files")
+        st.subheader(" Uploaded Files")
 
         for file in uploaded_files:
 
@@ -304,13 +304,13 @@ if uploaded_files:
             st.write(f"{icon} {file.name}")
 
         st.metric("Total Chunks", len(all_chunks))
-        st.success("✅ Knowledge Base Ready")
+        st.success(" Knowledge Base Ready")
 
     # -------------------------
     # Mode Selection
     # -------------------------
 
-    st.markdown("### 🎯 Select Mode")
+    st.markdown("###  Select Mode")
 
     mode = st.selectbox(
         "Select Mode",
@@ -335,7 +335,7 @@ if uploaded_files:
         "Generate Notes (Create concise revision notes)"
     ]
 
-    st.markdown("### 💬 Your Query")
+    st.markdown("###  Your Query")
 
     if mode in note_modes:
 
@@ -538,7 +538,7 @@ Provide:
 
             try:
 
-                with st.spinner("🤖 Generating answer..."):
+                with st.spinner(" Generating answer..."):
                     response = llm.invoke(prompt)
                     answer = response.content
 
@@ -549,7 +549,7 @@ Provide:
                 if attempt < max_retries - 1:
 
                     with st.spinner(
-                        f"⏳ Rate limit hit. Waiting 30 seconds before retry {attempt + 1} of {max_retries - 1}..."
+                        f" Rate limit hit. Waiting 30 seconds before retry {attempt + 1} of {max_retries - 1}..."
                     ):
                         time.sleep(30)
 
@@ -557,7 +557,7 @@ Provide:
 
                     st.warning(
                         """
-                        ⚠️ **Rate limit reached.**
+                         **Rate limit reached.**
 
                         Please try one of the following:
                         - Wait **1-2 minutes** and click Generate again
@@ -571,7 +571,7 @@ Provide:
 
             except BadRequestError as e:
 
-                st.error(f"⚠️ Bad request error: {str(e)}")
+                st.error(f" Bad request error: {str(e)}")
                 st.stop()
 
         # -------------------------
@@ -619,7 +619,7 @@ Provide:
 
             with col1:
                 st.download_button(
-                    "⬇️ Download Answer",
+                    "⬇ Download Answer",
                     answer,
                     file_name="academic_answer.txt",
                     mime="text/plain",
@@ -635,11 +635,11 @@ Provide:
                 )
 
                 if already_bookmarked:
-                    st.info("✅ Bookmarked")
+                    st.info(" Bookmarked")
 
                 else:
                     if st.button(
-                        "🔖 Bookmark",
+                        " Bookmark",
                         use_container_width=True
                     ):
                         st.session_state.bookmarks.append(
@@ -654,7 +654,7 @@ Provide:
 
             with col3:
                 if st.button(
-                    "🧹 Clear Answer",
+                    " Clear Answer",
                     use_container_width=True
                 ):
                     st.rerun()
@@ -662,7 +662,7 @@ Provide:
             if docs:
 
                 st.markdown("---")
-                st.subheader("📚 Sources Used")
+                st.subheader(" Sources Used")
 
                 for i, doc in enumerate(docs):
 
