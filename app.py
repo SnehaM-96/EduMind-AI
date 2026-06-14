@@ -33,6 +33,9 @@ if "history" not in st.session_state:
 if "bookmarks" not in st.session_state:
     st.session_state.bookmarks = []
 
+if "total_queries" not in st.session_state:
+    st.session_state.total_queries = 0
+
 # -------------------------
 # Cache Functions
 # -------------------------
@@ -67,35 +70,90 @@ def clean_context(text):
 
 
 # -------------------------
-# UI
+# SIDEBAR
 # -------------------------
 
-st.sidebar.title("Dashboard")
+st.sidebar.title("🎓 EduMind Dashboard")
+
+st.sidebar.markdown("---")
 
 # -------------------------
-# Bookmarks Section in Sidebar
+# Stats Section
 # -------------------------
 
-with st.sidebar:
+st.sidebar.subheader("📊 Session Stats")
 
-    st.markdown("---")
-    st.subheader("🔖 Bookmarks")
+col_a, col_b = st.sidebar.columns(2)
 
-    if len(st.session_state.bookmarks) == 0:
-        st.caption("No bookmarks yet")
+with col_a:
+    st.metric("Queries", st.session_state.total_queries)
 
-    else:
-        for i, bm in enumerate(st.session_state.bookmarks):
+with col_b:
+    st.metric("Bookmarks", len(st.session_state.bookmarks))
 
-            with st.expander(
-                f"📌 {bm['question'][:40]}..."
-                if len(bm['question']) > 40
-                else f"📌 {bm['question']}"
-            ):
-                st.caption(f"Subject: {bm.get('subject', 'General')}")
-                st.caption(f"Mode: {bm['mode']}")
-                st.write(bm['answer'])
+st.sidebar.markdown("---")
 
+# -------------------------
+# Recent Queries Section
+# -------------------------
+
+st.sidebar.subheader("🕘 Recent Queries")
+
+if len(st.session_state.history) == 0:
+    st.sidebar.caption("No queries yet")
+
+else:
+    for item in reversed(st.session_state.history[-5:]):
+
+        with st.sidebar.expander(
+            f"🔹 {item['question'][:35]}..."
+            if len(item['question']) > 35
+            else f"🔹 {item['question']}"
+        ):
+            st.caption(f"Subject: {item.get('subject', 'General')}")
+            st.caption(f"Mode: {item['mode']}")
+            st.write(item['answer'][:300] + "..." if len(item['answer']) > 300 else item['answer'])
+
+st.sidebar.markdown("---")
+
+# -------------------------
+# Bookmarks Section
+# -------------------------
+
+st.sidebar.subheader("🔖 Bookmarks")
+
+if len(st.session_state.bookmarks) == 0:
+    st.sidebar.caption("No bookmarks yet")
+
+else:
+
+    if st.sidebar.button("🗑️ Clear All Bookmarks"):
+        st.session_state.bookmarks = []
+        st.rerun()
+
+    for i, bm in enumerate(st.session_state.bookmarks):
+
+        with st.sidebar.expander(
+            f"📌 {bm['question'][:35]}..."
+            if len(bm['question']) > 35
+            else f"📌 {bm['question']}"
+        ):
+            st.caption(f"Subject: {bm.get('subject', 'General')}")
+            st.caption(f"Mode: {bm['mode']}")
+            st.write(bm['answer'][:300] + "..." if len(bm['answer']) > 300 else bm['answer'])
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.download_button(
+                    "⬇️ Download",
+                    bm['answer'],
+                    file_name=f"bookmark_{i+1}.txt",
+                    mime="text/plain",
+                    key=f"download_bm_{i}"
+                )
+
+            with col2:
                 if st.button(
                     "🗑️ Remove",
                     key=f"remove_bookmark_{i}"
@@ -103,8 +161,31 @@ with st.sidebar:
                     st.session_state.bookmarks.pop(i)
                     st.rerun()
 
-    st.markdown("---")
+st.sidebar.markdown("---")
 
+# -------------------------
+# Clear History Button
+# -------------------------
+
+st.sidebar.subheader("⚙️ Session Controls")
+
+if st.sidebar.button("🧹 Clear Query History"):
+    st.session_state.history = []
+    st.session_state.total_queries = 0
+    st.rerun()
+
+if st.sidebar.button("🔄 Reset Everything"):
+    st.session_state.history = []
+    st.session_state.bookmarks = []
+    st.session_state.total_queries = 0
+    st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.caption("EduMind AI — Learn Smarter. Study Better.")
+
+# -------------------------
+# MAIN UI
+# -------------------------
 
 st.markdown(
     """
@@ -184,7 +265,6 @@ if uploaded_files:
             )
 
     if len(all_chunks) == 0:
-
         st.error("No text extracted from uploaded files.")
         st.stop()
 
@@ -196,43 +276,41 @@ if uploaded_files:
     llm = get_llm()
 
     # -------------------------
-    # Sidebar Stats
+    # Uploaded Files Info
     # -------------------------
 
     with st.sidebar:
 
-        st.metric(
-            "Documents Uploaded",
-            len(uploaded_files)
-        )
-
-        st.metric(
-            "Knowledge Chunks",
-            len(all_chunks)
-        )
-
-        st.success("Knowledge Base Ready")
-
-        st.subheader("Uploaded Files")
+        st.markdown("---")
+        st.subheader("📁 Uploaded Files")
 
         for file in uploaded_files:
-            st.write(f"• {file.name}")
 
-        st.subheader("Recent Queries")
+            filename = file.name.lower()
 
-        if len(st.session_state.history) == 0:
-            st.caption("No queries yet")
+            if re.search(r'\bos\b', filename):
+                icon = "🖥️"
+            elif re.search(r'\bdbms\b', filename):
+                icon = "🗄️"
+            elif re.search(r'\bcn\b', filename):
+                icon = "🌐"
+            elif re.search(r'\bjava\b', filename):
+                icon = "☕"
+            elif re.search(r'\bpython\b', filename):
+                icon = "🐍"
+            else:
+                icon = "📄"
 
-        for item in reversed(
-            st.session_state.history[-5:]
-        ):
-            st.caption(
-                f"{item['mode']} : {item['question']}"
-            )
+            st.write(f"{icon} {file.name}")
+
+        st.metric("Total Chunks", len(all_chunks))
+        st.success("✅ Knowledge Base Ready")
 
     # -------------------------
     # Mode Selection
     # -------------------------
+
+    st.markdown("### 🎯 Select Mode")
 
     mode = st.selectbox(
         "Select Mode",
@@ -243,7 +321,8 @@ if uploaded_files:
             "Study Guide Generator (Create a complete revision guide)",
             "Important Questions Generator (Generate probable exam questions)",
             "Generate Notes (Create concise revision notes)"
-        ]
+        ],
+        label_visibility="collapsed"
     )
 
     # -------------------------
@@ -256,6 +335,8 @@ if uploaded_files:
         "Generate Notes (Create concise revision notes)"
     ]
 
+    st.markdown("### 💬 Your Query")
+
     if mode in note_modes:
 
         query = st.text_input(
@@ -263,13 +344,13 @@ if uploaded_files:
             placeholder="Leave blank to use all uploaded documents"
         )
 
-        generate_btn = st.button("Generate")
+        generate_btn = st.button("⚡ Generate", use_container_width=True)
 
     else:
 
         query = st.text_input(
             "Ask a Question",
-            placeholder="Example: Explain Database Normalization with examples"
+            placeholder="Example: Explain the LRU page replacement algorithm"
         )
 
         generate_btn = bool(query)
@@ -457,7 +538,7 @@ Provide:
 
             try:
 
-                with st.spinner("Generating answer..."):
+                with st.spinner("🤖 Generating answer..."):
                     response = llm.invoke(prompt)
                     answer = response.content
 
@@ -490,8 +571,8 @@ Provide:
 
             except BadRequestError as e:
 
-             st.error(f"⚠️ Bad request error: {str(e)}")
-             st.stop()
+                st.error(f"⚠️ Bad request error: {str(e)}")
+                st.stop()
 
         # -------------------------
         # OUTPUT
@@ -500,6 +581,8 @@ Provide:
         if answer:
 
             detected_subject = all_metadata[0]["subject"] if all_metadata else "General"
+
+            st.session_state.total_queries += 1
 
             st.session_state.history.append(
                 {
@@ -510,66 +593,81 @@ Provide:
                 }
             )
 
-            # Subject Name in Large Font
+            st.markdown("---")
+
+            # Subject Badge + Answer Header
             st.markdown(
-                f"<h2 style='color:#4A90D9;'>{detected_subject}</h2>",
+                f"""
+                <div style='background:#1e1e2e;padding:16px;border-radius:10px;margin-bottom:10px;'>
+                    <span style='background:#4A90D9;color:white;padding:4px 12px;border-radius:20px;font-size:14px;'>
+                        {detected_subject}
+                    </span>
+                    <h3 style='color:white;margin-top:10px;'>
+                        {query if query else "Generated Content"}
+                    </h3>
+                </div>
+                """,
                 unsafe_allow_html=True
             )
-
-            st.subheader("Answer")
 
             st.write(answer)
 
             st.markdown("---")
 
-            # Download + Bookmark side by side
-            col1, col2 = st.columns([1, 1])
+            # Action Buttons
+            col1, col2, col3 = st.columns(3)
 
             with col1:
                 st.download_button(
                     "⬇️ Download Answer",
                     answer,
                     file_name="academic_answer.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
                 )
 
             with col2:
 
-                    already_bookmarked = any(
+                already_bookmarked = any(
                     bm["question"] == (query if query else "Generated Content")
-                   and bm["answer"] == answer
-                   for bm in st.session_state.bookmarks
-    )
+                    and bm["answer"] == answer
+                    for bm in st.session_state.bookmarks
+                )
 
-    if already_bookmarked:
-        st.info("✅ Already bookmarked")
+                if already_bookmarked:
+                    st.info("✅ Bookmarked")
 
-    else:
-        if st.button("🔖 Bookmark this Answer"):
-            st.session_state.bookmarks.append(
-                {
-                    "question": query if query else "Generated Content",
-                    "mode": mode,
-                    "answer": answer,
-                    "subject": detected_subject
-                }
-            )
-            st.rerun()
+                else:
+                    if st.button(
+                        "🔖 Bookmark",
+                        use_container_width=True
+                    ):
+                        st.session_state.bookmarks.append(
+                            {
+                                "question": query if query else "Generated Content",
+                                "mode": mode,
+                                "answer": answer,
+                                "subject": detected_subject
+                            }
+                        )
+                        st.rerun()
+
+            with col3:
+                if st.button(
+                    "🧹 Clear Answer",
+                    use_container_width=True
+                ):
+                    st.rerun()
+
             if docs:
 
-                st.subheader("Sources Used")
+                st.markdown("---")
+                st.subheader("📚 Sources Used")
 
                 for i, doc in enumerate(docs):
 
-                    source_file = doc.metadata.get(
-                        "source",
-                        "Unknown File"
-                    )
-
-                    subject = doc.metadata.get(
-                        "subject",
-                        "General"
-                    )
+                    source_file = doc.metadata.get("source", "Unknown File")
+                    subject = doc.metadata.get("subject", "General")
 
                     with st.expander(
                         f"Source {i+1} | {subject} | {source_file}"
