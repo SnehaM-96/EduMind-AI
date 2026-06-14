@@ -1,17 +1,17 @@
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 
 def get_llm():
 
-    api_key = st.secrets.get("GOOGLE_API_KEY")
+    api_key = st.secrets.get("GROQ_API_KEY")
 
     if not api_key:
-        st.error("GOOGLE_API_KEY is missing in secrets.toml")
+        st.error("GROQ_API_KEY is missing in secrets.toml")
         st.stop()
 
-    return ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",
+    return ChatGroq(
+        model="llama3-8b-8192",
         temperature=0.3,
-        google_api_key=api_key
+        api_key=api_key
     )

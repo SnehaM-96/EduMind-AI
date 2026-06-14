@@ -3,7 +3,7 @@ streamlit
 langchain==0.2.14
 langchain-core==0.2.36
 langchain-community==0.2.12
-langchain-google-genai==1.0.10
+langchain-groq
 
 faiss-cpu==1.8.0
 

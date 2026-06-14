@@ -1,4 +1,7 @@
+
+import time
 import streamlit as st
+from groq import RateLimitError
 
 from processors.pdf import extract_pdf_text
 from processors.doc import extract_docx_text
@@ -395,67 +398,91 @@ Provide:
         # LLM CALL
         # -------------------------
 
-        import time
-        from google.api_core.exceptions import ResourceExhausted
-
         max_retries = 3
+        answer = None
 
         for attempt in range(max_retries):
 
             try:
-                response = llm.invoke(prompt)
-                answer = response.content
+
+                with st.spinner("Generating answer..."):
+                    response = llm.invoke(prompt)
+                    answer = response.content
+
                 break
 
-            except ResourceExhausted:
+            except RateLimitError:
+
                 if attempt < max_retries - 1:
-                    st.warning(f"Rate limit hit. Retrying in 20 seconds... (attempt {attempt + 1}/{max_retries})")
-                    time.sleep(20)
+
+                    with st.spinner(
+                        f"⏳ Rate limit hit. Waiting 30 seconds before retry {attempt + 1} of {max_retries - 1}..."
+                    ):
+                        time.sleep(30)
+
                 else:
-                    st.error("API quota exceeded. Please wait a minute and try again.")
+
+                    st.warning(
+                        """
+                        ⚠️ **Rate limit reached.**
+
+                        Please try one of the following:
+                        - Wait **1-2 minutes** and click Generate again
+                        - Upload a **smaller document**
+                        - Try a **shorter or simpler question**
+
+                        This is a free-tier API limit and resets automatically.
+                        """
+                    )
                     st.stop()
 
-        st.session_state.history.append(
-            {
-                "question": query if query else "Generated Content",
-                "mode": mode,
-                "answer": answer
-            }
-        )
+        # -------------------------
+        # OUTPUT
+        # -------------------------
 
-        st.subheader("Answer")
+        if answer:
 
-        st.write(answer)
-
-        if mode in [
-            "Exam Ready Answer (Generate a structured exam answer)",
-            "Question Paper Solver (Solve previous year questions)"
-        ]:
-
-            st.download_button(
-                "Download Answer",
-                answer,
-                file_name="academic_answer.txt",
-                mime="text/plain"
+            st.session_state.history.append(
+                {
+                    "question": query if query else "Generated Content",
+                    "mode": mode,
+                    "answer": answer
+                }
             )
 
-        if docs:
+            st.subheader("Answer")
 
-            st.subheader("Sources Used")
+            st.write(answer)
 
-            for i, doc in enumerate(docs):
+            if mode in [
+                "Exam Ready Answer (Generate a structured exam answer)",
+                "Question Paper Solver (Solve previous year questions)"
+            ]:
 
-                source_file = doc.metadata.get(
-                    "source",
-                    "Unknown File"
+                st.download_button(
+                    "Download Answer",
+                    answer,
+                    file_name="academic_answer.txt",
+                    mime="text/plain"
                 )
 
-                subject = doc.metadata.get(
-                    "subject",
-                    "General"
-                )
+            if docs:
 
-                with st.expander(
-                    f"Source {i+1} | {subject} | {source_file}"
-                ):
-                    st.write(doc.page_content)
+                st.subheader("Sources Used")
+
+                for i, doc in enumerate(docs):
+
+                    source_file = doc.metadata.get(
+                        "source",
+                        "Unknown File"
+                    )
+
+                    subject = doc.metadata.get(
+                        "subject",
+                        "General"
+                    )
+
+                    with st.expander(
+                        f"Source {i+1} | {subject} | {source_file}"
+                    ):
+                        st.write(doc.page_content)
