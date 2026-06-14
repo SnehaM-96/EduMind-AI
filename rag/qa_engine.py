@@ -11,7 +11,7 @@ def get_llm():
         st.stop()
 
     return ChatGroq(
-        model="mixtral-8x7b-32768",
+        model="llama-3.1-8b-instant",
         temperature=0.3,
         api_key=api_key
     )

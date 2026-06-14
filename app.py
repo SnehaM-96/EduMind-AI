@@ -488,21 +488,10 @@ Provide:
                     )
                     st.stop()
 
-            except BadRequestError:
+            except BadRequestError as e:
 
-                st.error(
-                    """
-                    ⚠️ **Bad request error.**
-
-                    This usually means the document contains unsupported
-                    characters or the content is too large.
-
-                    Please try:
-                    - Uploading a **different or smaller document**
-                    - Typing a **more specific topic** in the filter
-                    """
-                )
-                st.stop()
+             st.error(f"⚠️ Bad request error: {str(e)}")
+             st.stop()
 
         # -------------------------
         # OUTPUT
