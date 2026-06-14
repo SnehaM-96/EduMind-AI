@@ -1,7 +1,6 @@
-
 import time
 import streamlit as st
-from groq import RateLimitError
+from groq import RateLimitError, BadRequestError
 
 from processors.pdf import extract_pdf_text
 from processors.doc import extract_docx_text
@@ -30,6 +29,9 @@ st.set_page_config(
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "bookmarks" not in st.session_state:
+    st.session_state.bookmarks = []
+
 # -------------------------
 # Cache Functions
 # -------------------------
@@ -50,11 +52,55 @@ def build_vector_db(chunks, metadata):
         list(metadata)
     )
 
+
+# -------------------------
+# Context Cleaner
+# -------------------------
+
+def clean_context(text):
+    text = text.encode("utf-8", errors="ignore").decode("utf-8")
+    text = " ".join(text.split())
+    return text
+
+
 # -------------------------
 # UI
 # -------------------------
 
 st.sidebar.title("Dashboard")
+
+# -------------------------
+# Bookmarks Section in Sidebar
+# -------------------------
+
+with st.sidebar:
+
+    st.markdown("---")
+    st.subheader("🔖 Bookmarks")
+
+    if len(st.session_state.bookmarks) == 0:
+        st.caption("No bookmarks yet")
+
+    else:
+        for i, bm in enumerate(st.session_state.bookmarks):
+
+            with st.expander(
+                f"📌 {bm['question'][:40]}..."
+                if len(bm['question']) > 40
+                else f"📌 {bm['question']}"
+            ):
+                st.caption(f"Mode: {bm['mode']}")
+                st.write(bm['answer'])
+
+                if st.button(
+                    "🗑️ Remove",
+                    key=f"remove_bookmark_{i}"
+                ):
+                    st.session_state.bookmarks.pop(i)
+                    st.rerun()
+
+    st.markdown("---")
+
 
 st.markdown(
     """
@@ -146,7 +192,7 @@ if uploaded_files:
     llm = get_llm()
 
     # -------------------------
-    # Sidebar
+    # Sidebar Stats
     # -------------------------
 
     with st.sidebar:
@@ -232,7 +278,7 @@ if uploaded_files:
 
         docs = []
 
-        MAX_CONTEXT_CHARS = 3000
+        MAX_CONTEXT_CHARS = 2000
 
         if mode in note_modes:
 
@@ -251,6 +297,7 @@ if uploaded_files:
                 context = "\n\n".join(all_chunks[:10])
 
             context = context[:MAX_CONTEXT_CHARS]
+            context = clean_context(context)
 
         else:
 
@@ -262,6 +309,7 @@ if uploaded_files:
 
             context = "\n\n".join([doc.page_content for doc in docs])
             context = context[:MAX_CONTEXT_CHARS]
+            context = clean_context(context)
 
         # -------------------------
         # PROMPT
@@ -436,6 +484,22 @@ Provide:
                     )
                     st.stop()
 
+            except BadRequestError:
+
+                st.error(
+                    """
+                    ⚠️ **Bad request error.**
+
+                    This usually means the document contains unsupported
+                    characters or the content is too large.
+
+                    Please try:
+                    - Uploading a **different or smaller document**
+                    - Typing a **more specific topic** in the filter
+                    """
+                )
+                st.stop()
+
         # -------------------------
         # OUTPUT
         # -------------------------
@@ -453,6 +517,30 @@ Provide:
             st.subheader("Answer")
 
             st.write(answer)
+
+            # -------------------------
+            # Bookmark Button
+            # -------------------------
+
+            already_bookmarked = any(
+                bm["question"] == (query if query else "Generated Content")
+                and bm["answer"] == answer
+                for bm in st.session_state.bookmarks
+            )
+
+            if already_bookmarked:
+                st.info("✅ Already bookmarked")
+
+            else:
+                if st.button("🔖 Bookmark this Answer"):
+                    st.session_state.bookmarks.append(
+                        {
+                            "question": query if query else "Generated Content",
+                            "mode": mode,
+                            "answer": answer
+                        }
+                    )
+                    st.success("Bookmarked! View it in the sidebar.")
 
             if mode in [
                 "Exam Ready Answer (Generate a structured exam answer)",
