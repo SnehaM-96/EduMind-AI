@@ -193,12 +193,15 @@ streamlit run app.py
 
 ---
 
-## Live Demo
+## Delpoyement Link
 
 ```text
 https://sneham-96-edumind-ai-app-osvvz2.streamlit.app/
 ```
-
+## Demo Video
+```url
+https://youtu.be/59ajEU8vkXY
+```
 ---
 
 ## Team
