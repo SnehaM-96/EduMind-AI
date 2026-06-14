@@ -1,3 +1,4 @@
+import re
 import time
 import streamlit as st
 from groq import RateLimitError, BadRequestError
@@ -59,7 +60,9 @@ def build_vector_db(chunks, metadata):
 
 def clean_context(text):
     text = text.encode("utf-8", errors="ignore").decode("utf-8")
-    text = " ".join(text.split())
+    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
     return text
 
 
@@ -89,6 +92,7 @@ with st.sidebar:
                 if len(bm['question']) > 40
                 else f"📌 {bm['question']}"
             ):
+                st.caption(f"Subject: {bm.get('subject', 'General')}")
                 st.caption(f"Mode: {bm['mode']}")
                 st.write(bm['answer'])
 
@@ -148,19 +152,19 @@ if uploaded_files:
 
         filename = file.name.lower()
 
-        if "dbms" in filename:
+        if re.search(r'\bdbms\b', filename):
             subject = "DBMS"
 
-        elif "os" in filename:
+        elif re.search(r'\bos\b', filename):
             subject = "Operating Systems"
 
-        elif "cn" in filename:
+        elif re.search(r'\bcn\b', filename):
             subject = "Computer Networks"
 
-        elif "java" in filename:
+        elif re.search(r'\bjava\b', filename):
             subject = "Java"
 
-        elif "python" in filename:
+        elif re.search(r'\bpython\b', filename):
             subject = "Python"
 
         else:
@@ -278,7 +282,7 @@ if uploaded_files:
 
         docs = []
 
-        MAX_CONTEXT_CHARS = 2000
+        MAX_CONTEXT_CHARS = 1500
 
         if mode in note_modes:
 
@@ -290,11 +294,11 @@ if uploaded_files:
                 ]
 
                 context = "\n\n".join(
-                    filtered_chunks if filtered_chunks else all_chunks[:10]
+                    filtered_chunks if filtered_chunks else all_chunks[:5]
                 )
 
             else:
-                context = "\n\n".join(all_chunks[:10])
+                context = "\n\n".join(all_chunks[:5])
 
             context = context[:MAX_CONTEXT_CHARS]
             context = clean_context(context)
@@ -506,53 +510,62 @@ Provide:
 
         if answer:
 
+            detected_subject = all_metadata[0]["subject"] if all_metadata else "General"
+
             st.session_state.history.append(
                 {
                     "question": query if query else "Generated Content",
                     "mode": mode,
-                    "answer": answer
+                    "answer": answer,
+                    "subject": detected_subject
                 }
+            )
+
+            # Subject Name in Large Font
+            st.markdown(
+                f"<h2 style='color:#4A90D9;'>{detected_subject}</h2>",
+                unsafe_allow_html=True
             )
 
             st.subheader("Answer")
 
             st.write(answer)
 
-            # -------------------------
-            # Bookmark Button
-            # -------------------------
+            st.markdown("---")
 
-            already_bookmarked = any(
-                bm["question"] == (query if query else "Generated Content")
-                and bm["answer"] == answer
-                for bm in st.session_state.bookmarks
-            )
+            # Download + Bookmark side by side
+            col1, col2 = st.columns([1, 1])
 
-            if already_bookmarked:
-                st.info("✅ Already bookmarked")
-
-            else:
-                if st.button("🔖 Bookmark this Answer"):
-                    st.session_state.bookmarks.append(
-                        {
-                            "question": query if query else "Generated Content",
-                            "mode": mode,
-                            "answer": answer
-                        }
-                    )
-                    st.success("Bookmarked! View it in the sidebar.")
-
-            if mode in [
-                "Exam Ready Answer (Generate a structured exam answer)",
-                "Question Paper Solver (Solve previous year questions)"
-            ]:
-
+            with col1:
                 st.download_button(
-                    "Download Answer",
+                    "⬇️ Download Answer",
                     answer,
                     file_name="academic_answer.txt",
                     mime="text/plain"
                 )
+
+            with col2:
+
+                already_bookmarked = any(
+                    bm["question"] == (query if query else "Generated Content")
+                    and bm["answer"] == answer
+                    for bm in st.session_state.bookmarks
+                )
+
+                if already_bookmarked:
+                    st.info("✅ Already bookmarked")
+
+                else:
+                    if st.button("🔖 Bookmark this Answer"):
+                        st.session_state.bookmarks.append(
+                            {
+                                "question": query if query else "Generated Content",
+                                "mode": mode,
+                                "answer": answer,
+                                "subject": detected_subject
+                            }
+                        )
+                        st.success("✅ Bookmarked! View it in the sidebar.")
 
             if docs:
 
