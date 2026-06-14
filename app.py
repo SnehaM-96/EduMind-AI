@@ -252,6 +252,8 @@ if uploaded_files:
             docs = retrieve_docs(db, query)
 
             context = "\n\n".join([doc.page_content for doc in docs])
+            MAX_CONTEXT_CHARS = 8000
+            context = context[:MAX_CONTEXT_CHARS]
 
         # -------------------------
         # PROMPT
